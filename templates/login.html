@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Emotion Detection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text: #ecf3fb;
+            --muted: #b8ccdf;
+            --card-bg: rgba(17, 24, 39, 0.34);
+            --card-border: rgba(255, 255, 255, 0.24);
+            --focus: #7cff67;
+            --button-a: #7cff67;
+            --button-b: #3fe6ff;
+            --danger: #ffd0d0;
+            --success: #d8ffcf;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            min-height: 100%;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Sora", "Segoe UI", sans-serif;
+            background: #090c16;
+            color: var(--text);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .iridescence-container {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .grain {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.18;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.45) 0.4px, transparent 0.4px);
+            background-size: 3px 3px;
+            mix-blend-mode: soft-light;
+        }
+
+        .auth-layout {
+            position: relative;
+            z-index: 2;
+            width: min(1040px, calc(100% - 36px));
+            min-height: 100vh;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 0;
+        }
+
+
+        .auth-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 22px;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.38);
+            transform: translateY(10px);
+            animation: rise-in 550ms ease forwards;
+        }
+
+        .glass-card:nth-child(2) {
+            animation-delay: 90ms;
+        }
+
+        @keyframes rise-in {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1,
+        h2 {
+            margin: 0 0 8px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .subtitle {
+            margin: 0 0 18px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .flash {
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+        }
+
+        .flash.error {
+            color: var(--danger);
+            background: rgba(158, 34, 34, 0.32);
+        }
+
+        .flash.success {
+            color: var(--success);
+            background: rgba(40, 122, 58, 0.3);
+        }
+
+        .field {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #d6e3f1;
+        }
+
+        input {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid rgba(173, 205, 230, 0.45);
+            background: rgba(10, 16, 28, 0.45);
+            color: #eef5ff;
+            padding: 12px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input::placeholder {
+            color: #98adbf;
+        }
+
+        input:focus {
+            border-color: var(--focus);
+            box-shadow: 0 0 0 3px rgba(124, 255, 103, 0.2);
+        }
+
+        .submit-btn {
+            width: 100%;
+            margin-top: 6px;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            color: #001220;
+            cursor: pointer;
+            background: linear-gradient(120deg, var(--button-a), var(--button-b));
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 10px 28px rgba(63, 230, 255, 0.36);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(124, 255, 103, 0.34);
+        }
+
+        @media (max-width: 920px) {
+            .auth-layout {
+                align-items: flex-start;
+            }
+
+            .auth-grid {
+                grid-template-columns: 1fr;
+                padding: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="iridescence" class="iridescence-container" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <main class="auth-layout">
+        <section class="auth-grid">
+            <article class="glass-card">
+                <h1>Welcome Back</h1>
+                <p class="subtitle">Log in to access your emotion detection workspace.</p>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form action="{{ url_for('login') }}" method="post">
+                    <div class="field">
+                        <label for="login-email">Email</label>
+                        <input id="login-email" name="email" type="email" placeholder="you@example.com" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="login-password">Password</label>
+                        <input id="login-password" name="password" type="password" placeholder="Enter password" required>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Log In</button>
+                </form>
+            </article>
+
+            <article class="glass-card">
+                <h2>Create Account</h2>
+                <p class="subtitle">Sign up once and start predicting emotions instantly.</p>
+
+                <form action="{{ url_for('register') }}" method="post">
+                    <div class="field">
+                        <label for="register-username">Username</label>
+                        <input id="register-username" name="username" type="text" placeholder="Username" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="register-email">Email</label>
+                        <input id="register-email" name="email" type="email" placeholder="you@example.com" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="register-password">Password</label>
+                        <input id="register-password" name="password" type="password" minlength="6" placeholder="At least 6 characters" required>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Create Account</button>
+                </form>
+            </article>
+        </section>
+    </main>
+
+    <script type="module">
+        import { Renderer, Program, Mesh, Color, Triangle } from 'https://esm.sh/ogl';
+
+        const vertexShader = `
+            attribute vec2 uv;
+            attribute vec2 position;
+
+            varying vec2 vUv;
+
+            void main() {
+                vUv = uv;
+                gl_Position = vec4(position, 0.0, 1.0);
+            }
+        `;
+
+        const fragmentShader = `
+            precision highp float;
+
+            uniform float uTime;
+            uniform vec3 uColor;
+            uniform vec3 uResolution;
+            uniform vec2 uMouse;
+            uniform float uAmplitude;
+            uniform float uSpeed;
+
+            varying vec2 vUv;
+
+            void main() {
+                float mr = min(uResolution.x, uResolution.y);
+                vec2 uv = (vUv.xy * 2.0 - 1.0) * uResolution.xy / mr;
+
+                uv += (uMouse - vec2(0.5)) * uAmplitude;
+
+                float d = -uTime * 0.5 * uSpeed;
+                float a = 0.0;
+                for (float i = 0.0; i < 8.0; ++i) {
+                    a += cos(i - d - a * uv.x);
+                    d += sin(uv.y * i + a);
+                }
+                d += uTime * 0.5 * uSpeed;
+
+                vec3 col = vec3(cos(uv * vec2(d, a)) * 0.6 + 0.4, cos(a + d) * 0.5 + 0.5);
+                col = cos(col * cos(vec3(d, a, 2.5)) * 0.5 + 0.5) * uColor;
+                gl_FragColor = vec4(col, 1.0);
+            }
+        `;
+
+        const iridescenceEl = document.getElementById('iridescence');
+        if (iridescenceEl) {
+            const renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio || 1, 2) });
+
+            const gl = renderer.gl;
+            gl.clearColor(0.03, 0.06, 0.12, 1.0);
+
+            gl.canvas.style.width = '100%';
+            gl.canvas.style.height = '100%';
+            gl.canvas.style.display = 'block';
+            iridescenceEl.appendChild(gl.canvas);
+
+            const geometry = new Triangle(gl);
+            const mouse = { x: 0.5, y: 0.5 };
+
+            const program = new Program(gl, {
+                vertex: vertexShader,
+                fragment: fragmentShader,
+                uniforms: {
+                    uTime: { value: 0 },
+                    uColor: { value: new Color(0.5, 0.6, 0.8) },
+                    uResolution: {
+                        value: new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height)
+                    },
+                    uMouse: { value: new Float32Array([mouse.x, mouse.y]) },
+                    uAmplitude: { value: 0.1 },
+                    uSpeed: { value: 1.0 }
+                }
+            });
+
+            const mesh = new Mesh(gl, { geometry, program });
+
+            const resize = () => {
+                const width = Math.max(iridescenceEl.clientWidth, 1);
+                const height = Math.max(iridescenceEl.clientHeight, 1);
+                renderer.setSize(width, height);
+                program.uniforms.uResolution.value = new Color(width, height, width / height);
+            };
+
+            window.addEventListener('resize', resize);
+            resize();
+
+            const handleMouseMove = (e) => {
+                const rect = iridescenceEl.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width;
+                const y = 1.0 - (e.clientY - rect.top) / rect.height;
+                mouse.x = x;
+                mouse.y = y;
+                program.uniforms.uMouse.value[0] = x;
+                program.uniforms.uMouse.value[1] = y;
+            };
+
+            iridescenceEl.addEventListener('mousemove', handleMouseMove);
+
+            const animate = (t) => {
+                program.uniforms.uTime.value = t * 0.001;
+                renderer.render({ scene: mesh });
+                requestAnimationFrame(animate);
+            };
+
+            requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>

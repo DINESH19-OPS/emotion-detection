@@ -1,0 +1,30 @@
+# Python cache and environment
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+env/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and temporary outputs
+*.log
+*.tmp
+tempCodeRunnerFile.python
+
+# Large training artifacts
+results/
+bert_emotion_model/
+
+# Optional local datasets and generated artifacts
+*.pt
+*.pth
+*.safetensors
+*.bin
