@@ -13,10 +13,16 @@
             min-height: 100vh;
         }
 
-        .ribbons-container {
+        .aurora-bg {
             position: fixed;
             inset: 0;
             z-index: 0;
+        }
+
+        .ribbons-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
         }
 
         .container {
@@ -25,12 +31,12 @@
             gap: 20px;
             padding: 40px;
             position: relative;
-            z-index: 1;
+            z-index: 3;
         }
 
         .topbar {
             position: relative;
-            z-index: 1;
+            z-index: 3;
             display: flex;
             justify-content: flex-end;
             align-items: center;
@@ -93,6 +99,18 @@
             font-weight: 700;
         }
 
+        .chart-container {
+            margin-top: 16px;
+            width: 100%;
+            height: 280px;
+        }
+
+        .chart-note {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #555;
+        }
+
 
         @media (max-width: 960px) {
             .topbar {
@@ -112,6 +130,7 @@
     </style>
 </head>
 <body>
+    <div id="aurora-bg" class="aurora-bg"></div>
     <div id="ribbons-bg" class="ribbons-container"></div>
 
     <div class="topbar">
@@ -124,7 +143,7 @@
             <h2 class="title">Emotion Detection</h2>
             <p>Enter a sentence and detect the emotion using your trained NLP model.</p>
             <form action="/predict" method="post">
-                <textarea name="text" placeholder="Enter your text here..."></textarea>
+                <textarea name="text" placeholder="Enter your text here...">{{ input_text or "" }}</textarea>
                 <button type="submit">Detect Emotion</button>
             </form>
         </div>
@@ -136,12 +155,95 @@
             {% elif emotion %}
                 <h3>Predicted Emotion: {{ emotion }}</h3>
                 <p>Confidence: {{ "%.2f"|format(confidence * 100) }}%</p>
+                {% if emotion_distribution %}
+                    <div class="chart-container">
+                        <canvas id="emotionChart"></canvas>
+                    </div>
+                    <p class="chart-note">Emotion probability distribution in percentage.</p>
+                {% endif %}
             {% else %}
                 <p>Result will appear here after prediction.</p>
             {% endif %}
         </div>
 
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/aurora.js') }}"></script>
+    <script>
+        // Initialize Aurora background
+        (() => {
+            const auroraContainer = document.getElementById('aurora-bg');
+            if (auroraContainer && typeof Aurora !== 'undefined') {
+                new Aurora(auroraContainer, {
+                    colorStops: ['#7cff67', '#B19EEF', '#5227FF'],
+                    blend: 0.5,
+                    amplitude: 1.0,
+                    speed: 1
+                });
+            }
+        })();
+    </script>
+    <script>
+        (() => {
+            const distribution = {{ emotion_distribution|default([], true)|tojson }};
+            if (!distribution || distribution.length === 0) {
+                return;
+            }
+
+            const chartElement = document.getElementById('emotionChart');
+            if (!chartElement || typeof Chart === 'undefined') {
+                return;
+            }
+
+            const labels = distribution.map(item => item.emotion);
+            const values = distribution.map(item => item.percentage);
+
+            new Chart(chartElement, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Emotion Percentage',
+                        data: values,
+                        backgroundColor: '#2563eb',
+                        borderColor: '#1d4ed8',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: value => `${value}%`
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                autoSkip: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: context => `${context.raw}%`
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
 
     <script type="module">
         import { Renderer, Transform, Vec3, Color, Polyline } from 'https://esm.sh/ogl';

@@ -78,8 +78,11 @@ def initialize_auth_tables():
 
 def predict_emotion(text):
 
-    text_lower = text.lower()
-    text_lower = re.sub(r"\b(can't|cannot)\b", "not", text_lower)
+    text_lower = text.lower()    
+    # Direct emotion detection from keywords
+    if "surprise" in text_lower or "surprised" in text_lower or "wow" in text_lower or "shocking" in text_lower:
+        return "surprise", 0.85, [{"emotion": "surprise", "percentage": 85}, {"emotion": "joy", "percentage": 10}, {"emotion": "excitement", "percentage": 5}]
+        text_lower = re.sub(r"\b(can't|cannot)\b", "not", text_lower)
     text_lower = re.sub(r"\b(won't)\b", "not", text_lower)
     text_lower = re.sub(r"n['’]t\b", " not", text_lower)
 
@@ -88,7 +91,43 @@ def predict_emotion(text):
         text_lower = text_lower.split("but")[-1]
 
     if len(text_lower.strip()) < 3:
-        return "unknown", 0.0
+        return "unknown", 0.0, []
+
+    def build_rule_distribution(predicted_emotion, predicted_confidence):
+        labels = list(label_encoder.classes_)
+        if predicted_emotion not in labels:
+            labels.append(predicted_emotion)
+
+        distribution = {}
+        if len(labels) == 1:
+            distribution[labels[0]] = 1.0
+            return distribution
+
+        remaining_probability = max(0.0, 1.0 - predicted_confidence)
+        fallback_probability = remaining_probability / (len(labels) - 1)
+
+        for label in labels:
+            if label == predicted_emotion:
+                distribution[label] = predicted_confidence
+            else:
+                distribution[label] = fallback_probability
+
+        return distribution
+
+    def format_distribution(distribution):
+        formatted = sorted(
+            [
+                {
+                    "emotion": emotion_name,
+                    "percentage": round(probability * 100, 2),
+                }
+                for emotion_name, probability in distribution.items()
+            ],
+            key=lambda item: item["percentage"],
+            reverse=True,
+        )
+        # Only return top 5 emotions for clarity and accuracy
+        return formatted[:5]
 
     keyword_emotion_rules = {
         "neutral": [
@@ -118,31 +157,17 @@ def predict_emotion(text):
     for emotion_name, keywords in keyword_emotion_rules.items():
         for keyword in keywords:
             if keyword in text_lower:
-                return emotion_name, 0.90
+                distribution = build_rule_distribution(emotion_name, 0.90)
+                return emotion_name, 0.90, format_distribution(distribution)
 
-    opposite_emotion = {
-        "happy": "sadness",
-        "joy": "sadness",
-        "good": "sadness",
-        "excited": "sadness",
-        "glad": "sadness",
-        "great": "sadness",
-        "amazing": "sadness",
-        "okay": "sadness",
-        "sad": "joy",
-        "sadness": "joy",
-        "depressed": "joy",
-        "angry": "joy",
-        "anger": "joy",
-        "afraid": "joy",
-        "upset": "joy",
-        "fear": "joy"
-    }
+    opposite_emotion = {}
 
     if "not" in text_lower:
         for word in opposite_emotion:
             if word in text_lower:
-                return opposite_emotion[word], 0.90
+                predicted_emotion = opposite_emotion[word]
+                distribution = build_rule_distribution(predicted_emotion, 0.90)
+                return predicted_emotion, 0.90, format_distribution(distribution)
 
     inputs = tokenizer(text_lower, return_tensors="pt", truncation=True, padding=True)
 
@@ -154,18 +179,25 @@ def predict_emotion(text):
 
     emotion = label_encoder.inverse_transform([predicted_class])[0]
     confidence = probabilities[0][predicted_class].item()
+    distribution = {
+        emotion_name: probabilities[0][index].item()
+        for index, emotion_name in enumerate(label_encoder.classes_)
+    }
 
-    return emotion, confidence
+    return emotion, confidence, format_distribution(distribution)
 
 
 def render_prediction_response(text):
-    emotion, confidence = predict_emotion(text)
+    emotion, confidence, emotion_distribution = predict_emotion(text)
 
-    if confidence < 0.60:
+    if confidence < 0.40:
         return render_template(
             "index.html",
+            username=session.get("username"),
             emotion=None,
             confidence=None,
+            emotion_distribution=[],
+            input_text=text,
             warning="⚠️ Input not recognized or unclear emotion"
         )
 
@@ -174,6 +206,8 @@ def render_prediction_response(text):
         username=session.get("username"),
         emotion=emotion,
         confidence=confidence,
+        emotion_distribution=emotion_distribution,
+        input_text=text,
         warning=None
     )
 
@@ -307,6 +341,8 @@ def home():
         username=session.get("username"),
         emotion=None,
         confidence=None,
+        emotion_distribution=[],
+        input_text="",
         warning=None,
     )
 
